@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Remote Flash Client</title>
+  <style>
+    body { text-align:center; font-family:sans-serif; margin-top:40px; }
+    #status { font-size:20px; margin-top:20px; }
+  </style>
+</head>
+<body>
+  <h2>💡 Remote Flash Client</h2>
+  <p id="status">Menunggu izin kamera...</p>
+
+  <script>
+    const server = "https://nama-projek.vercel.app/api/flash"; // GANTI ke domain vercel kamu
+    let track;
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        track = stream.getVideoTracks()[0];
+        document.getElementById("status").textContent = "Kamera aktif ✔️";
+        loopCheck();
+      } catch (err) {
+        document.getElementById("status").textContent = "❌ Akses kamera ditolak!";
+      }
+    }
+
+    async function loopCheck() {
+      try {
+        const res = await fetch(server);
+        const data = await res.json();
+
+        document.getElementById("status").textContent = "Status Flash: " + data.status;
+
+        if (track && "torch" in track.getSettings()) {
+          await track.applyConstraints({
+            advanced: [{ torch: data.status === "on" }]
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      setTimeout(loopCheck, 3000); // cek tiap 3 detik
+    }
+
+    startCamera();
+  </script>
+</body>
+</html>
